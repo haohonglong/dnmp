@@ -8,6 +8,8 @@ ARG NGINX_INSTALL_APPS
 
 ENV INSTALL_APPS=",${NGINX_INSTALL_APPS},"
 
+RUN apk add --no-cache curl vim git bash procps zip
+
 RUN if [ "${CONTAINER_PACKAGE_URL}" != "" ]; then \
         sed -i "s/dl-cdn.alpinelinux.org/${CONTAINER_PACKAGE_URL}/g" /etc/apk/repositories; \
     fi

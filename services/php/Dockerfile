@@ -5,6 +5,7 @@ ARG TZ
 ARG PHP_EXTENSIONS
 ARG CONTAINER_PACKAGE_URL
 
+RUN apk add --no-cache curl vim git bash procps zip
 
 RUN if [ $CONTAINER_PACKAGE_URL ] ; then sed -i "s/dl-cdn.alpinelinux.org/${CONTAINER_PACKAGE_URL}/g" /etc/apk/repositories ; fi
 
