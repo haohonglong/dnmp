@@ -9,6 +9,7 @@ RUN apk add --no-cache curl vim git bash procps zip
 
 RUN if [ $CONTAINER_PACKAGE_URL ] ; then sed -i "s/dl-cdn.alpinelinux.org/${CONTAINER_PACKAGE_URL}/g" /etc/apk/repositories ; fi
 
+RUN apk add --no-cache --update --virtual .phpize-deps $PHPIZE_DEPS && pecl install yaf 
 
 COPY ./extensions /tmp/extensions
 WORKDIR /tmp/extensions
