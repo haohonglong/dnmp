@@ -8,10 +8,61 @@ services:
     ports:
       - 8001:8001
     volumes:
-      - ${SOURCE_DIR}:/www/:rw
+      - ${NODE_WWW}:/www/:rw
     working_dir: /www
     extra_hosts:
-      - "boda.api:192.168.0.1"
+      - "boda.api:$HOST_IP"
+    stdin_open: true
+    tty: true
+    networks:
+      - public
+
+  node2:
+    image: node:${NODE_VERSION}
+    container_name: node2
+    environment:
+      TZ: "$TZ"
+    ports:
+      - 8002:8001
+    volumes:
+      - ${NODE_WWW}:/www/:rw
+    working_dir: /www
+    extra_hosts:
+      - "boda.api:$HOST_IP"
+    stdin_open: true
+    tty: true
+    networks:
+      - public
+
+  node3:
+    image: node:${NODE_VERSION}
+    container_name: node3
+    environment:
+      TZ: "$TZ"
+    ports:
+      - 8003:8001
+    volumes:
+      - ${NODE_WWW}:/www/:rw
+    working_dir: /www
+    extra_hosts:
+      - "boda.api:$HOST_IP"
+    stdin_open: true
+    tty: true
+    networks:
+      - public
+      
+  node4:
+    image: node:${NODE_VERSION}
+    container_name: node4
+    environment:
+      TZ: "$TZ"
+    ports:
+      - 8004:8001
+    volumes:
+      - ${NODE_WWW}:/www/:rw
+    working_dir: /www
+    extra_hosts:
+      - "boda.api:$HOST_IP"
     stdin_open: true
     tty: true
     networks:
