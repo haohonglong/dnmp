@@ -1,4 +1,4 @@
-ARG NODE_VERSION=12.0.0-alpine
+ARG NODE_VERSION=node:12.0.0-alpine
 FROM ${NODE_VERSION}
 
 RUN apk add --no-cache curl vim git bash procps zip
