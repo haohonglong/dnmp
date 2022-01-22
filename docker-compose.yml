@@ -29,7 +29,7 @@ services:
     build:
       context: ./services/php
       args:
-        PHP_VERSION: php:${PHP_VERSION}-fpm-alpine
+        PHP_VERSION: php:7.1-fpm-alpine3.9
         CONTAINER_PACKAGE_URL: ${CONTAINER_PACKAGE_URL}
         PHP_EXTENSIONS: ${PHP_EXTENSIONS}
         TZ: "$TZ"
