@@ -1,67 +1,79 @@
 version: '3'
 services:
+  nvm:
+    image: haohonglong/nvm:version1.0
+    container_name: nvm
+    hostname: nvm
+    environment:
+      TZ: "$TZ"
+      HOSTIP: ${HOST_IP}
+    ports:
+      - 3010:3000
+      - 3011:3011
+      - 3012:3012
+    volumes:
+      - ${NODE_WWW}:/www/:rw
+    working_dir: /www
+    extra_hosts:
+      - "yaf.local:$HOST_IP"
+      - "boda.api:$HOST_IP"
+    stdin_open: true
+    tty: true
+    networks:
+      - public
+
   node1:
-    image: node:${NODE_VERSION}
+    image: node:14.16.1-alpine
     container_name: node1
+    hostname: node1
     environment:
       TZ: "$TZ"
+      HOSTIP: ${HOST_IP}
     ports:
-      - 8001:8001
+      - 3000:3000
     volumes:
       - ${NODE_WWW}:/www/:rw
     working_dir: /www
     extra_hosts:
+      - "yaf.local:$HOST_IP"
       - "boda.api:$HOST_IP"
     stdin_open: true
     tty: true
     networks:
       - public
 
-  node2:
-    image: node:${NODE_VERSION}
-    container_name: node2
+  node_build_lam:
+    image: haohonglong/nvm:version1.0
+    container_name: node_build_lam
+    hostname: node_build_lam
     environment:
       TZ: "$TZ"
+      HOSTIP: $HOST_IP
     ports:
-      - 8002:8001
+      - 9528:3000
     volumes:
-      - ${NODE_WWW}:/www/:rw
-    working_dir: /www
-    extra_hosts:
-      - "boda.api:$HOST_IP"
+      - /www/lamborghiniJS/LAM2-demos:/www/:rw
+    working_dir: /www/tools/build
     stdin_open: true
     tty: true
     networks:
       - public
 
-  node3:
-    image: node:${NODE_VERSION}
-    container_name: node3
+  lam:
+    image: haohonglong/node-http-server:1.0
+    container_name: lam
+    hostname: lam
     environment:
       TZ: "$TZ"
+      HOSTIP: $HOST_IP
     ports:
-      - 8003:8001
+      - 9527:9527
     volumes:
-      - ${NODE_WWW}:/www/:rw
+      - /www/lamborghiniJS/LAM2-demos:/www/:rw
     working_dir: /www
+    restart: always
     extra_hosts:
-      - "boda.api:$HOST_IP"
-    stdin_open: true
-    tty: true
-    networks:
-      - public
-      
-  node4:
-    image: node:${NODE_VERSION}
-    container_name: node4
-    environment:
-      TZ: "$TZ"
-    ports:
-      - 8004:8001
-    volumes:
-      - ${NODE_WWW}:/www/:rw
-    working_dir: /www
-    extra_hosts:
+      - "yaf.local:$HOST_IP"
       - "boda.api:$HOST_IP"
     stdin_open: true
     tty: true

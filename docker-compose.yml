@@ -8,6 +8,10 @@ services:
         CONTAINER_PACKAGE_URL: ${CONTAINER_PACKAGE_URL}
         NGINX_INSTALL_APPS: ${NGINX_INSTALL_APPS}
     container_name: nginx
+    hostname: nginx
+    working_dir: /etc/nginx/conf.d
+    extra_hosts:
+      - "lam2.core:$HOST_IP"
     ports:
       - "${NGINX_HTTP_HOST_PORT}:80"
       - "${NGINX_HTTPS_HOST_PORT}:443"
@@ -21,19 +25,35 @@ services:
       - ${NGINX_LOG_DIR}:/var/log/nginx/:rw
     environment:
       TZ: "$TZ"
+      HOSTIP: $HOST_IP
     restart: always
     networks:
       - default
 
-  php:
+  composer:
+    image: composer/composer
+    container_name: composer
+    hostname: composer
+    volumes:
+      - ${SOURCE_DIR}:/app/:rw
+    working_dir: /app
+    command: ["top"]
+    networks:
+      - default
+    
+  php56:
+    image: lam/php56
     build:
       context: ./services/php
       args:
-        PHP_VERSION: php:7.1-fpm-alpine3.9
+        PHP_VERSION: php:${PHP56_VERSION}-fpm-alpine
         CONTAINER_PACKAGE_URL: ${CONTAINER_PACKAGE_URL}
-        PHP_EXTENSIONS: ${PHP_EXTENSIONS}
+        PHP_EXTENSIONS: ${PHP56_EXTENSIONS}
         TZ: "$TZ"
-    container_name: php
+    container_name: php56
+    hostname: php56
+    extra_hosts:
+      - "blog.admin:$HOST_IP"
     depends_on:
       - "mysql"
       - "redis"
@@ -44,8 +64,41 @@ services:
       - ${PHP_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
       - ${PHP_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
       - ${PHP_LOG_DIR}:/var/log/php
-      - ${DATA_DIR}/composer:/tmp/composer
     restart: always
+    cap_add:
+      - SYS_PTRACE
+    networks:
+      - default
+  
+
+
+  php:
+    build:
+      context: ./services/php
+      args:
+        PHP_VERSION: php:7.1-fpm-alpine3.9
+        CONTAINER_PACKAGE_URL: ${CONTAINER_PACKAGE_URL}
+        PHP_EXTENSIONS: ${PHP_EXTENSIONS}
+        TZ: "$TZ"
+    container_name: php
+    hostname: php
+    extra_hosts:
+      - "yaf.local:$HOST_IP"
+      - "blog.admin:$HOST_IP"
+    depends_on:
+      - "mysql"
+      - "redis"
+    expose:
+      - 9501
+    volumes:
+      - ${SOURCE_DIR}:/www/:rw
+      - ${PHP_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
+      - ${PHP_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
+      - ${PHP_LOG_DIR}:/var/log/php
+    restart: always
+    environment:
+      - TZ=$TZ
+      - HOSTIP=$HOST_IP
     cap_add:
       - SYS_PTRACE
     networks:
@@ -54,46 +107,43 @@ services:
   mysql:
     image: mysql:${MYSQL5_VERSION}
     container_name: mysql
+    hostname: mysql
     ports:
       - "3306:3306"
     volumes:
       - ${MYSQL5_CONF_FILE}:/etc/mysql/conf.d/mysql.cnf:ro
-      - /Users/long/data/mysql:/var/lib/mysql/:rw
+      - ${DATA_DIR}/mysql:/var/lib/mysql/:rw
     restart: always
     networks:
       - default
     environment:
       MYSQL_ROOT_PASSWORD: "${MYSQL5_ROOT_PASSWORD}"
       TZ: "$TZ"
+      HOSTIP: $HOST_IP
 
   redis:
-    image: redis:4.0
+    image: redis:${REDIS_VERSION}
     container_name: redis
-    restart: always
-    environment:
-      - REDIS_PASS_FILE=/run/secrets/redis-password
-      - TZ=Asia/Shanghai
-    command: [
-      "bash", "-c",
-      '
-       docker-entrypoint.sh
-       --requirepass "$$(cat $$REDIS_PASS_FILE)"
-      '
-    ]
+    hostname: redis
+    ports:
+      - "${REDIS_HOST_PORT}:6379"
     volumes:
-      - ./data/redis/etc/redis.conf:/usr/local/etc/redis/redis.conf
-      - ./data/redis/data:/data
-      - ./data/redis/etc/redis-password:/run/secrets/redis-password
+      - ${REDIS_CONF_FILE}:/etc/redis.conf:ro
+      - ${DATA_DIR}/redis:/data/:rw
+    restart: always
+    entrypoint: ["redis-server", "/etc/redis.conf"]
+    environment:
+      TZ: "$TZ"
+      HOSTIP: $HOST_IP
     networks:
       - default
-    ports:
-      - "6397:6379"
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin
+    hostname: phpmyadmin
     ports:
-      - "8080:80"
+      - "81:80"
     networks:
       - default
     depends_on:
@@ -102,32 +152,31 @@ services:
       - PMA_ARBITRARY=1
       - PMA_HOST=mysql
       - TZ=Asia/Shanghai
+      - HOSTIP=$HOST_IP
 
   phpredisadmin:
-    image: erikdubbelboer/phpredisadmin
+    image: erikdubbelboer/phpredisadmin:latest
     container_name: phpredisadmin
+    hostname: phpredisadmin
     ports:
       - "8086:80"
-    depends_on:
-      - "redis"
-    restart: always
+    networks:
+     - default
     environment:
-      - ADMIN_USER=admin
-      - ADMIN_PASS=123456
-      - REDIS_1_AUTH=123456
       - REDIS_1_HOST=redis
       - REDIS_1_PORT=6379
       - TZ=$TZ
-    networks:
-      - default
+      - HOSTIP=$HOST_IP
 
   mongodb:
     image: mongo:${MONGODB_VERSION}
     container_name: mongodb
+    hostname: mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: "${MONGODB_INITDB_ROOT_USERNAME}"
       MONGO_INITDB_ROOT_PASSWORD: "root1234"
       TZ: "$TZ"
+      HOSTIP: $HOST_IP
     volumes:
       - ${DATA_DIR}/mongo:/data/db:rw
       - ${DATA_DIR}/mongo_key:/mongo:rw
@@ -141,37 +190,65 @@ services:
   adminmongo:
     image: mrvautin/adminmongo
     container_name: adminmongo
+    hostname: adminmongo
     ports:
       - "${ADMINMONGO_HOST_PORT}:1234"
     environment:
       - HOST=0.0.0.0
       - DB_HOST=mongodb
       - DB_PORT=27017
+      - HOSTIP=$HOST_IP
     networks:
       - default
 
-  node:
-    build:
-      context: ./services/node
-      args:
-        NODE_VERSION: node:${NODE_VERSION}
-    container_name: onemall
-    depends_on:
-      - "mongodb"
+  gcc:
+    image: gcc:4.9
+    container_name: gcc
+    hostname: gcc
     environment:
       TZ: "$TZ"
+      HOSTIP: $HOST_IP
+    restart: always
+    command: ["bash"]
+    tty: true
+    working_dir: /app
+    networks:
+      - default
+
+  rust:
+    image: haohonglong/nvm:version1.0
+    container_name: rust
+    hostname: rust
+    environment:
+      TZ: "$TZ"
+      HOSTIP: $HOST_IP
     ports:
-      - 3000:3000
-      - 3001:3001
+      - 7878:7878
     volumes:
-      - ./app/onemall-api:/www/:rw
-    working_dir: /www
-    extra_hosts:
-      - "boda.api:$HOST_IP"
+      - /www/lamborghiniJS/LAM2-demos:/www/:rw
+    working_dir: /www/tools/build
     stdin_open: true
     tty: true
     networks:
       - default
+
+  golang:
+    image: haohonglong/nvm:version1.0
+    container_name: golang
+    hostname: golang
+    environment:
+      TZ: "$TZ"
+      HOSTIP: $HOST_IP
+    ports:
+      - 8090:8090
+    volumes:
+      - /www/lamborghiniJS/LAM2-demos:/www/:rw
+    working_dir: /www/tools/build
+    stdin_open: true
+    tty: true
+    networks:
+      - default
+
 
 
 networks:
