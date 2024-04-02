@@ -13,6 +13,7 @@ services:
       - 3012:3012
     volumes:
       - ${NODE_WWW}:/www/:rw
+      - ./node.sh:/node.sh:rw
     working_dir: /www
     extra_hosts:
       - "yaf.local:$HOST_IP"
@@ -53,6 +54,7 @@ services:
       - 9528:3000
     volumes:
       - /www/lamborghiniJS/LAM2-demos:/www/:rw
+      - ./node.sh:/node.sh:rw
     working_dir: /www/tools/build
     stdin_open: true
     tty: true

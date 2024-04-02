@@ -243,11 +243,14 @@ services:
       - 8090:8090
     volumes:
       - /www/lamborghiniJS/LAM2-demos:/www/:rw
+      - ./golang.sh:/golang.sh:rw
     working_dir: /www/tools/build
     stdin_open: true
     tty: true
     networks:
       - default
+
+
 
 
 
