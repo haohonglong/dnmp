@@ -6,3 +6,5 @@ nvm install 20
 corepack enable
 yarn -v
 
+npm config set registry https://registry.npmmirror.com
+npm config get registry
